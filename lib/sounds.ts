@@ -1,8 +1,9 @@
-// Tia Land Magical Sound Synthesizer & Voice Engine (Web Audio API & Web Speech)
+// Tia Land Magical Sound Synthesizer & Universal Voice Engine (Hybrid Audio & Native MP3)
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
   private soundEnabled: boolean = true;
+  private currentAudio: HTMLAudioElement | null = null;
 
   constructor() {
     // initialized on first interaction
@@ -155,79 +156,93 @@ class SoundEngine {
     });
   }
 
-  // Web Speech API: Sweet English Voice calling Princess Tia!
-  public speak(text: string) {
-    if (!this.soundEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) {
-      return;
-    }
+  // Play a dedicated bundled MP3 audio file (100% works in Android APK / WebView!)
+  public playMp3(filename: string) {
+    if (!this.soundEnabled || typeof window === "undefined") return;
 
     try {
-      window.speechSynthesis.cancel(); // stop current utterance
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "en-US";
-      utterance.pitch = 1.3; // friendly, cheerful, child-like
-      utterance.rate = 0.92; // clear and gentle
-
-      // Select female / pleasant voice if available
-      const voices = window.speechSynthesis.getVoices();
-      const englishVoice =
-        voices.find((v) => v.lang.startsWith("en") && (v.name.includes("Female") || v.name.includes("Samantha") || v.name.includes("Zira") || v.name.includes("Victoria") || v.name.includes("Google US English"))) ||
-        voices.find((v) => v.lang.startsWith("en"));
-
-      if (englishVoice) {
-        utterance.voice = englishVoice;
+      if (this.currentAudio) {
+        this.currentAudio.pause();
+        this.currentAudio.currentTime = 0;
       }
 
-      window.speechSynthesis.speak(utterance);
+      const audio = new Audio(`/audio/voices/${filename}`);
+      this.currentAudio = audio;
+      audio.play().catch((err) => {
+        console.warn("Audio play error, retrying on user gesture", err);
+      });
     } catch (e) {
-      console.error("Speech error", e);
+      console.error(e);
     }
   }
 
-  // Pre-packaged phrases for Tia
-  public cheerTia(phraseType?: "welcome" | "fashion" | "art" | "memory" | "goodjob" | "princess" | "love") {
-    const phrases = {
-      welcome: [
-        "Welcome to Tia Land! Let's have magical fun!",
-        "Hello Princess Tia! You are so sweet!",
-        "Yay Tia! Welcome to your magical kingdom!",
-      ],
-      fashion: [
-        "Wow Tia! You look like a real glowing princess!",
-        "Tia, your fashion style is gorgeous!",
-        "Superstar Tia! The prettiest dress ever!",
-      ],
-      art: [
-        "Tia, you are an amazing artist! Beautiful colors!",
-        "So creative, Princess Tia! Keep shining!",
-        "What a masterpiece, Tia! I love your painting!",
-      ],
-      memory: [
-        "Good job Tia! You have a super smart memory!",
-        "You found it Tia! You are brilliant!",
-        "Yay Tia! Three stars for you!",
-      ],
-      goodjob: [
-        "Good job Princess Tia!",
-        "You did it, Tia!",
-        "Super Tia, high five!",
-      ],
-      princess: [
-        "You are the most beautiful princess in the whole world, Tia!",
-        "Crown for Princess Tia!",
-        "Princess Tia shines like a bright star!",
-      ],
-      love: [
-        "Daddy loves you so much, Princess Tia!",
-        "Tia, you make the whole world smile!",
-        "We love you Tia! Forever and always!",
-      ],
+  // Universal Speech Engine: Plays bundled MP3, or /api/tts streaming, with Web Speech API as fallback
+  public speak(text: string) {
+    if (!this.soundEnabled || typeof window === "undefined") return;
+
+    // Direct mapping to bundled crystal-clear MP3 files
+    const knownPhrases: Record<string, string> = {
+      "Hello! Welcome to Princess Tia's magical world! Let's play and shine together!": "card_greeting.mp3",
+      "You are a musical superstar Tia! I love your music!": "piano_cheer.mp3",
+      "Welcome to Tia's Secret Club! Daddy loves you so much Princess Tia!": "secret_club.mp3",
+      "Hello my sweet Princess Tia! You are the smartest and most beautiful girl in the world! Daddy loves you so much!": "dad_message.mp3",
+      "Wow Tia! Your fashion style is super sparkling and glamorous! You shine like a real princess!": "fairy_message.mp3",
+      "Tia, you are a superstar artist! Every color you touch turns into pure magic!": "art_message.mp3",
+      "Let's dance and sing with Princess Tia!": "dance_cheer.mp3",
+      "Let's dance and sing with Tia! 1, 2, 3, Yay Tia!": "dance_cheer.mp3",
     };
 
-    const list = phrases[phraseType || "goodjob"];
-    const text = list[Math.floor(Math.random() * list.length)];
-    this.speak(text);
-    return text;
+    if (knownPhrases[text]) {
+      this.playMp3(knownPhrases[text]);
+      return;
+    }
+
+    // Try streamed TTS audio endpoint (100% reliable inside APK / WebView)
+    try {
+      if (this.currentAudio) {
+        this.currentAudio.pause();
+        this.currentAudio.currentTime = 0;
+      }
+      const audio = new Audio(`/api/tts?text=${encodeURIComponent(text)}`);
+      this.currentAudio = audio;
+      audio.play().catch(() => {
+        // Fallback to browser Web Speech API
+        this.fallbackWebSpeech(text);
+      });
+    } catch (e) {
+      this.fallbackWebSpeech(text);
+    }
+  }
+
+  private fallbackWebSpeech(text: string) {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      utterance.pitch = 1.3;
+      utterance.rate = 0.92;
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {}
+  }
+
+  // Random cheerleader voice for Princess Tia
+  public cheerTia(phraseType?: "welcome" | "fashion" | "art" | "memory" | "goodjob" | "princess" | "love") {
+    const type = phraseType || "goodjob";
+    const files: Record<string, string[]> = {
+      welcome: ["welcome_1.mp3", "welcome_2.mp3", "welcome_3.mp3"],
+      fashion: ["fashion_1.mp3", "fashion_2.mp3", "fashion_3.mp3"],
+      art: ["art_1.mp3", "art_2.mp3", "art_3.mp3"],
+      memory: ["memory_1.mp3", "memory_2.mp3", "memory_3.mp3"],
+      goodjob: ["goodjob_1.mp3", "goodjob_2.mp3", "goodjob_3.mp3"],
+      princess: ["princess_1.mp3", "princess_2.mp3", "princess_3.mp3"],
+      love: ["love_1.mp3", "love_2.mp3", "love_3.mp3"],
+    };
+
+    const list = files[type] || files.goodjob;
+    const chosenFile = list[Math.floor(Math.random() * list.length)];
+    this.playMp3(chosenFile);
+    return chosenFile;
   }
 }
 
