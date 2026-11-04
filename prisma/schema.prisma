@@ -1,0 +1,73 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../lib/generated/client"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model DrawingArtwork {
+  id         String   @id @default(cuid())
+  title      String   @default("لوحة سحرية جديدة")
+  artistName String   @default("الأميرة تيا")
+  imageData  String   @db.Text
+  likesCount Int      @default(0)
+  stickers   String?  @default("")
+  createdAt  DateTime @default(now())
+}
+
+model FashionDesign {
+  id          String   @id @default(cuid())
+  title       String   @default("إطلالة ملكية")
+  dressStyle  String
+  hairStyle   String
+  crown       String
+  wings       String?  @default("none")
+  accessory   String?  @default("none")
+  background  String   @default("castle")
+  previewData String?  @db.Text
+  createdAt   DateTime @default(now())
+}
+
+model GameScore {
+  id         String   @id @default(cuid())
+  playerName String   @default("الأميرة تيا")
+  gameType   String   // MEMORY, PIANO, FASHION, COLORING
+  score      Int      @default(0)
+  stars      Int      @default(3)
+  level      Int      @default(1)
+  createdAt  DateTime @default(now())
+}
+
+model SecretClubBadge {
+  id          String   @id @default(cuid())
+  badgeCode   String   @unique
+  title       String
+  description String
+  icon        String
+  isUnlocked  Boolean  @default(false)
+  unlockedAt  DateTime?
+}
+
+model VoiceMessage {
+  id        String   @id @default(cuid())
+  fromName  String   @default("بابا حبيبي")
+  messageEn String
+  messageAr String
+  icon      String   @default("💖")
+  createdAt DateTime @default(now())
+}
+
+model Settings {
+  id             String   @id @default("default")
+  princessName   String   @default("Tia")
+  princessAge    Int      @default(6)
+  favoriteColor  String   @default("#ff4081")
+  pinCode        String   @default("tia")
+  welcomeVoiceEn String   @default("Welcome to Tia Land! You are the sweetest princess!")
+  welcomeVoiceAr String   @default("أهلاً بكِ في أرض تيا السحرية!")
+  soundEnabled   Boolean  @default(true)
+  updatedAt      DateTime @updatedAt
+}
