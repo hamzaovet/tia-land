@@ -37,7 +37,7 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Sync Capacitor Android
-        run: npx cap sync android || echo "Cap sync passed"
+        run: npx cap sync android
 
       - name: Make Gradlew Executable
         run: |
