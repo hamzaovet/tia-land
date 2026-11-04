@@ -1,0 +1,13 @@
+{
+  "appId": "com.tialand.app",
+  "appName": "أرض تيا",
+  "webDir": "public",
+  "server": {
+    "url": "https://tia-land.vercel.app",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#fff0f5"
+  }
+}
